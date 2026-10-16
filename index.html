@@ -518,8 +518,15 @@
       transition: .35s var(--ease);
     }
     .slot span { display: block; font-family: var(--label); font-size: .9rem; letter-spacing: .26em; color: var(--accent); text-transform: uppercase; margin-bottom: 2px; font-weight: 600; }
+    .slot { background: transparent; cursor: pointer; color: inherit; width: 100%; }
+    .slot.sel { background: var(--navy); color: var(--cream); border-color: var(--navy); }
+    .slot.sel span { color: var(--brass); }
     .slot:hover { background: var(--navy); color: var(--cream); border-color: var(--navy); transform: translateY(-4px); }
     .slots__note { grid-column: 1 / -1; text-align: center; font-family: var(--label); font-size: .95rem; font-weight: 600; letter-spacing: .28em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+
+    .courses__cta { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 10px; }
+    .courses__cta .btn { width: 100%; text-align: center; }
+    .courses__cta small { font-family: var(--label); font-weight: 600; font-size: .85rem; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); text-align: center; }
 
     /* Horarios + ubicación */
     .visit__grid { display: grid; grid-template-columns: 1fr 1.1fr; gap: clamp(36px, 6vw, 80px); }
@@ -813,11 +820,15 @@
           <p class="lead">Formamos a la próxima generación de barberos. Cursos presenciales los lunes, en cuatro turnos.</p>
         </div>
         <div class="slots">
-          <div class="slot"><span>Mañana</span>10:00 – 12:00</div>
-          <div class="slot"><span>Mediodía</span>12:00 – 14:00</div>
-          <div class="slot"><span>Tarde</span>16:00 – 18:00</div>
-          <div class="slot"><span>Tarde</span>18:00 – 20:00</div>
+          <button type="button" class="slot" data-turno="10:00 a 12:00"><span>Mañana</span>10:00 – 12:00</button>
+          <button type="button" class="slot" data-turno="12:00 a 14:00"><span>Mediodía</span>12:00 – 14:00</button>
+          <button type="button" class="slot" data-turno="16:00 a 18:00"><span>Tarde</span>16:00 – 18:00</button>
+          <button type="button" class="slot" data-turno="18:00 a 20:00"><span>Tarde</span>18:00 – 20:00</button>
           <p class="slots__note">Todos los lunes</p>
+          <div class="courses__cta">
+            <button type="button" class="btn btn--navy" id="course-btn">Quiero anotarme al curso</button>
+            <small id="course-hint">Elegí un turno (opcional) y te llevamos a WhatsApp</small>
+          </div>
         </div>
       </div>
     </div>
@@ -883,8 +894,8 @@
        CONFIGURACIÓN DE TURNOS  (editar acá)
        ========================================================= */
     // WhatsApp de la barbería: solo números, con código de país (Argentina celular: 549 + código de área + número).
-    // Ej: '5493415551234'. Si queda vacío, WhatsApp abre para elegir a quién enviar el mensaje.
-    const WHATSAPP_NUMBER = '';
+    // Lo usan turnos, gift card y cursos.
+    const WHATSAPP_NUMBER = '5493413440454'; // 341 344-0454
     // Fotos: guardalas en assets/barberos/ (b1.jpg, b2.jpg...). Si falta una, se muestra una silueta.
     // Si algún barbero tiene su propio WhatsApp, agregá phone: '549...' y se usa ese en lugar del general.
     const BARBERS = [
@@ -1139,6 +1150,25 @@
       scene.addEventListener('pointerup', end); scene.addEventListener('pointercancel', end);
       requestAnimationFrame(draw);
     })();
+
+
+    /* =========================================================
+       CURSOS -> WhatsApp
+       ========================================================= */
+    let courseTurno = '';
+    document.querySelectorAll('.slot').forEach(b => b.addEventListener('click', () => {
+      const same = b.classList.contains('sel');
+      document.querySelectorAll('.slot').forEach(x => x.classList.remove('sel'));
+      courseTurno = same ? '' : b.dataset.turno;
+      if (!same) b.classList.add('sel');
+      $('#course-hint').textContent = courseTurno ? `Turno elegido: lunes de ${courseTurno} hs` : 'Elegí un turno (opcional) y te llevamos a WhatsApp';
+    }));
+    $('#course-btn').addEventListener('click', () => {
+      const msg = '¡Hola Thomson Barbershop! Quiero info para anotarme al curso de barbería.' +
+        (courseTurno ? `\n\n• Turno que me interesa: lunes de ${courseTurno} hs` : '\n\n• Todavía no elegí turno, ¿qué opciones tienen?');
+      const url = `https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
+      if (!window.open(url, '_blank', 'noopener')) window.location.href = url;
+    });
 
     // Si hay turnos tomados en otra pestaña, refrescar
     window.addEventListener('storage', (e) => { if (e.key === KEY) renderTimes(); });
