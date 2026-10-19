@@ -467,6 +467,8 @@
       border-radius: 3px; rotate: -7deg; opacity: .85;
     }
     .time.past { opacity: .32; }
+    .times__note { grid-column: 1 / -1; font-family: var(--type); font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: rgba(20,34,74,.75); padding-bottom: 2px; }
+    .times__note b { color: var(--pen); font-weight: 400; }
     .times__hint { grid-column: 1 / -1; padding: 16px 18px; border: 2px dashed rgba(20,34,74,.35); font-family: var(--hand); font-size: 1.6rem; font-weight: 500; color: rgba(20,34,74,.72); }
     .legend { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 18px; font-family: var(--type); font-size: .74rem; letter-spacing: .1em; text-transform: uppercase; color: rgba(20,34,74,.72); }
     .legend span { display: inline-flex; align-items: center; gap: 8px; }
@@ -872,7 +874,7 @@
               <h3 class="hand sheet__title">Turnos de la semana</h3>
               <svg class="underline" viewBox="0 0 330 14" preserveAspectRatio="none" aria-hidden="true"><path d="M3 9 C 50 2, 95 13, 150 6 S 250 11, 327 4"/></svg>
               <p class="type">Thomson Barbershop · Balcarce 17 BIS · Rosario</p>
-              <p class="type">Lunes a sábado · 10 a 20 hs · turnos de 30 min</p>
+              <p class="type">Lunes de 14 a 17:30 hs · martes a sábado de 10 a 20 hs · turnos de 30 min</p>
               <p class="promo-stamp"><span>Promo martes y miércoles · Corte</span><b>$10.000</b></p>
             </header>
 
@@ -1130,6 +1132,30 @@
     const toISO = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
     const minToTime = (m) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
     const SLOTS = []; for (let m = OPEN_MIN; m < CLOSE_MIN; m += STEP_MIN) SLOTS.push(minToTime(m));
+
+    /* =========================================================
+       TURNOS DE LOS BARBEROS (mañana / tarde)
+       Los ids son los de BARBERS: b1 Luka, b2 Martin, b3 Lucas, b4 Alejo.
+       Mañana = de OPEN_MIN hasta SHIFT_SPLIT · Tarde = de SHIFT_SPLIT hasta CLOSE_MIN.
+       Lunes: atienden todos los barberos, de 14:00 a 17:30.
+       ========================================================= */
+    const SHIFT_SPLIT = 14 * 60; // 14:00
+    const SCHEDULE = {
+      2: { m: ['b2', 'b4'], t: ['b1', 'b3'] },   // martes
+      3: { m: ['b2', 'b4'], t: ['b1', 'b3'] },   // miércoles
+      4: { m: ['b2', 'b4'], t: ['b1', 'b3'] },   // jueves
+      5: { m: ['b1', 'b3'], t: ['b2', 'b4'] },   // viernes
+      6: { m: ['b1', 'b3'], t: ['b2', 'b4'] }    // sábado
+    };
+    // Devuelve { from, to, label } en minutos, o null si ese barbero no atiende ese día.
+    function shiftOf(barberId, iso) {
+      const [y, mo, da] = iso.split('-').map(Number);
+      const sch = SCHEDULE[new Date(y, mo - 1, da).getDay()];
+      if (!sch) return { from: 14 * 60, to: 17 * 60 + 30, label: 'de tarde' }; // lunes
+      if (sch.m.includes(barberId)) return { from: OPEN_MIN, to: SHIFT_SPLIT, label: 'de mañana' };
+      if (sch.t.includes(barberId)) return { from: SHIFT_SPLIT, to: CLOSE_MIN, label: 'de tarde' };
+      return null;
+    }
     const fmtDay = (d, opts) => new Intl.DateTimeFormat('es-AR', opts).format(d);
     const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -1192,7 +1218,14 @@
       const now = new Date();
       const isToday = state.date === toISO(now);
       const nowMin = now.getHours() * 60 + now.getMinutes();
-      box.innerHTML = SLOTS.map(t => {
+      const shift = shiftOf(state.barber, state.date);
+      const bar = BARBERS.find(x => x.id === state.barber);
+      if (!shift) {
+        box.innerHTML = `<div class="times__hint">${bar.name} no atiende ese día. Probá con otro día u otro barbero.</div>`;
+        return;
+      }
+      const note = `<div class="times__note">${bar.name} atiende <b>${shift.label}</b> · ${minToTime(shift.from)} a ${minToTime(shift.to)} hs</div>`;
+      box.innerHTML = note + SLOTS.filter(t => { const [h, m] = t.split(':').map(Number); return h * 60 + m >= shift.from && h * 60 + m < shift.to; }).map(t => {
         const [h, m] = t.split(':').map(Number);
         const past = isToday && (h * 60 + m) <= nowMin;
         const busy = Store.isBusy(state.date, state.barber, t);
