@@ -1286,7 +1286,7 @@
     const pad = (n) => String(n).padStart(2, '0');
     const toISO = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
     const minToTime = (m) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
-    const SLOTS = []; for (let m = OPEN_MIN; m < CLOSE_MIN; m += STEP_MIN) SLOTS.push(minToTime(m));
+    const SLOTS = []; for (let m = OPEN_MIN; m <= CLOSE_MIN; m += STEP_MIN) SLOTS.push(minToTime(m));
 
     /* =========================================================
        TURNOS DE LOS BARBEROS (mañana / tarde)
@@ -1381,7 +1381,7 @@
         return;
       }
       const note = `<div class="times__note">${bar.name} atiende <b>${shift.label}</b> · ${minToTime(shift.from)} a ${minToTime(shift.to)} hs</div>`;
-      box.innerHTML = note + SLOTS.filter(t => { const [h, m] = t.split(':').map(Number); return h * 60 + m >= shift.from && h * 60 + m < shift.to; }).map(t => {
+      box.innerHTML = note + SLOTS.filter(t => { const [h, m] = t.split(':').map(Number); return h * 60 + m >= shift.from && h * 60 + m <= shift.to; }).map(t => {
         const [h, m] = t.split(':').map(Number);
         const past = isToday && (h * 60 + m) <= nowMin;
         const busy = Store.isBusy(state.date, state.barber, t);
