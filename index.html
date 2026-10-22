@@ -75,7 +75,7 @@
       "@type": "OpeningHoursSpecification",
       "dayOfWeek": "Monday",
       "opens": "14:00",
-      "closes": "17:30"
+      "closes": "17:00"
     },
     {
       "@type": "OpeningHoursSpecification",
@@ -1029,7 +1029,7 @@
               <h3 class="hand sheet__title">Turnos de la semana</h3>
               <svg class="underline" viewBox="0 0 330 14" preserveAspectRatio="none" aria-hidden="true"><path d="M3 9 C 50 2, 95 13, 150 6 S 250 11, 327 4"/></svg>
               <p class="type">Thomson Barbershop · Balcarce 17 BIS · Rosario</p>
-              <p class="type">Lunes de 14 a 17:30 hs · martes a sábado de 10 a 20 hs · turnos de 30 min</p>
+              <p class="type">Turno tarde: 14:00 a 19:30 hs · lunes hasta las 17:00 hs · turnos de 30 min</p>
               <p class="promo-stamp"><span>Promo martes y miércoles · Corte</span><b>$10.000</b></p>
             </header>
 
@@ -1261,7 +1261,7 @@
     const isPromoDay = (iso) => !!iso && PROMO.days.includes(isoDow(iso));
     const priceOf = (sv, iso) => (sv.id === PROMO.id && isPromoDay(iso)) ? PROMO.price : sv.price;
     const OPEN_MIN  = 10 * 60;   // 10:00
-    const CLOSE_MIN = 20 * 60;   // 20:00
+    const CLOSE_MIN = 19 * 60 + 30; // 19:30, fin del turno tarde
     const STEP_MIN  = 30;        // duración máxima de cada turno
     const DAYS_AHEAD = 14;       // cuántos días hacia adelante se puede reservar
     const OPEN_DAYS = [1, 2, 3, 4, 5, 6]; // 0 = domingo ... 6 = sábado
@@ -1292,9 +1292,9 @@
        TURNOS DE LOS BARBEROS (mañana / tarde)
        Los ids son los de BARBERS: b1 Luka, b2 Martin, b3 Lucas, b4 Alejo.
        Mañana = de OPEN_MIN hasta SHIFT_SPLIT · Tarde = de SHIFT_SPLIT hasta CLOSE_MIN.
-       Lunes: atienden todos los barberos, de 14:00 a 17:30.
+       Lunes: atienden todos los barberos, de 14:00 a 17:00.
        ========================================================= */
-    const SHIFT_SPLIT = 16 * 60; // 16:00
+    const SHIFT_SPLIT = 14 * 60; // 14:00, comienzo del turno tarde
     const SCHEDULE = {
       2: { m: ['b2', 'b4'], t: ['b1', 'b3'] },   // martes
       3: { m: ['b2', 'b4'], t: ['b1', 'b3'] },   // miércoles
@@ -1306,7 +1306,7 @@
     function shiftOf(barberId, iso) {
       const [y, mo, da] = iso.split('-').map(Number);
       const sch = SCHEDULE[new Date(y, mo - 1, da).getDay()];
-      if (!sch) return { from: 14 * 60, to: 17 * 60 + 30, label: 'de tarde' }; // lunes
+      if (!sch) return { from: 14 * 60, to: 17 * 60, label: 'de tarde' }; // lunes
       if (sch.m.includes(barberId)) return { from: OPEN_MIN, to: SHIFT_SPLIT, label: 'de mañana' };
       if (sch.t.includes(barberId)) return { from: SHIFT_SPLIT, to: CLOSE_MIN, label: 'de tarde' };
       return null;
